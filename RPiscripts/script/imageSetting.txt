@@ -1,0 +1,7 @@
+width=1920
+height=1080
+framerate=30
+bitrate=8000000
+video_duration=3600
+video_number=1000
+audio_device=plughw:1,0
