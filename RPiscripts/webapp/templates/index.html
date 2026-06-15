@@ -13,7 +13,11 @@
   {% elif status.state == "preview" %}
     <p class="state state-preview">プレビュー中</p>
   {% elif status.state == "recording" %}
-    <p class="state state-recording">撮影中: {{ folder_name }}</p>
+    {% if status.stopping %}
+      <p class="state state-stopping">停止処理中...</p>
+    {% else %}
+      <p class="state state-recording">撮影中: {{ folder_name }}</p>
+    {% endif %}
   {% endif %}
 </section>
 
@@ -21,7 +25,7 @@
   <a class="button" href="{{ url_for('preview') }}">プレビューを見る</a>
   {% if status.state != "recording" %}
     <a class="button" href="{{ url_for('record') }}">撮影を開始する</a>
-  {% else %}
+  {% elif not status.stopping %}
     <form method="post" action="{{ url_for('record_stop') }}" onsubmit="return confirm('撮影を停止しますか？');">
       <button type="submit" class="button button-danger">撮影を停止する</button>
     </form>

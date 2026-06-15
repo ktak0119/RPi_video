@@ -71,7 +71,12 @@ class CameraManager:
 
     def get_status(self):
         with self.lock:
-            return {"state": self.state, "record_dir": self.record_dir}
+            stopping = (
+                self.state == STATE_RECORDING
+                and self.recording_handle is not None
+                and self.recording_handle.stop_event.is_set()
+            )
+            return {"state": self.state, "record_dir": self.record_dir, "stopping": stopping}
 
     def start_preview(self):
         with self.lock:
@@ -87,7 +92,7 @@ class CameraManager:
 
                 output = StreamingOutput()
                 picam2 = Picamera2()
-                picam2.configure(picam2.create_video_configuration(main={"size": (320, 240)}))
+                picam2.configure(picam2.create_video_configuration(main={"size": (640, 480)}))
                 picam2.start_recording(MJPEGEncoder(), FileOutput(output))
             except Exception as e:
                 return False, f"カメラの初期化に失敗しました: {e}"
@@ -98,18 +103,12 @@ class CameraManager:
             return True, None
 
     def next_frame(self):
-        while True:
-            with self.lock:
-                if self.state != STATE_PREVIEW:
-                    return None
-                output = self.output
-            if output is None:
-                return None
-            with output.condition:
-                output.condition.wait(timeout=5)
-                frame = output.frame
-            if frame is not None:
-                return frame
+        output = self.output
+        if output is None:
+            return None
+        with output.condition:
+            output.condition.wait(timeout=5)
+            return output.frame
 
     def start_recording(self, record_dir, audio):
         with self.lock:

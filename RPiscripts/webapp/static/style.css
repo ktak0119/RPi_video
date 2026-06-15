@@ -45,6 +45,10 @@ header h1 a {
   color: #2c7be5;
 }
 
+.state-stopping {
+  color: #e69500;
+}
+
 .error {
   color: #d9534f;
   font-weight: bold;
