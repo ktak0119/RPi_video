@@ -1,5 +1,10 @@
 {% extends "base.html" %}
 {% block title %}状態 - RPi連続撮影{% endblock %}
+{% block extra_head %}
+{% if status.state == "recording" %}
+<meta http-equiv="refresh" content="3">
+{% endif %}
+{% endblock %}
 {% block content %}
 <section class="status">
   <h2>状態</h2>

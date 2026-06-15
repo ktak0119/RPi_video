@@ -131,7 +131,7 @@ class CameraManager:
             handle = self.recording_handle
             thread = self.recording_thread
         handle.stop()
-        thread.join(timeout=10)
+        thread.join(timeout=3)
         return True
 
     def _run_recording(self, record_dir, audio, handle):
