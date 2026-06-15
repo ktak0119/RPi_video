@@ -13,23 +13,28 @@ def shoot_thumbnail(jpg_path, width, height):
     ])
 
 
-def start_audio(wav_path, duration, audio_device):
-    return subprocess.Popen([
+def start_audio(wav_path, duration, audio_device, handle):
+    proc = subprocess.Popen([
         "arecord", "-D", audio_device,
         "-f", "S16_LE", "-c", "1", "-r", "44100",
         "-d", str(duration), wav_path,
     ])
+    handle.register(proc)
+    return proc
 
 
-def record_video(h264_path, width, height, framerate, bitrate, duration):
-    subprocess.run([
+def record_video(h264_path, width, height, framerate, bitrate, duration, handle):
+    proc = subprocess.Popen([
         "rpicam-vid", "-t", str(duration * 1000), "-o", h264_path, "-n",
         "--width", width, "--height", height,
         "--framerate", framerate, "--bitrate", bitrate,
     ])
+    handle.register(proc)
+    proc.wait()
+    handle.unregister(proc)
 
 
-def run_recording_loop(record_dir, audio, stop_event, settings_path):
+def run_recording_loop(record_dir, audio, handle, settings_path):
     settings = common.load_settings(settings_path)
     width = settings["width"]
     height = settings["height"]
@@ -40,7 +45,7 @@ def run_recording_loop(record_dir, audio, stop_event, settings_path):
     video_number = int(settings["video_number"])
 
     for seq in range(1, video_number + 1):
-        if stop_event.is_set():
+        if handle.stop_event.is_set():
             break
         try:
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -53,11 +58,12 @@ def run_recording_loop(record_dir, audio, stop_event, settings_path):
 
             audio_proc = None
             if audio:
-                audio_proc = start_audio(wav_path, duration, audio_device)
+                audio_proc = start_audio(wav_path, duration, audio_device, handle)
 
-            record_video(h264_path, width, height, framerate, bitrate, duration)
+            record_video(h264_path, width, height, framerate, bitrate, duration, handle)
 
             if audio_proc is not None:
                 audio_proc.wait()
+                handle.unregister(audio_proc)
         except Exception:
             traceback.print_exc()

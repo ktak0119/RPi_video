@@ -1,5 +1,6 @@
 import io
 import logging
+import signal
 import threading
 from threading import Condition
 
@@ -19,6 +20,39 @@ class StreamingOutput(io.BufferedIOBase):
             self.condition.notify_all()
 
 
+class RecordingHandle:
+    """録画ループの停止指示と、実行中のrpicam-vid/arecordプロセスの管理を行う。
+
+    rpicam-vid/arecordは指定したdurationが終わるまで動き続けるため、
+    stop()で実行中のプロセスにSIGINTを送り、Ctrl-Cと同様に即座に終了させる。
+    """
+
+    def __init__(self):
+        self.stop_event = threading.Event()
+        self._procs = []
+        self._procs_lock = threading.Lock()
+
+    def register(self, proc):
+        with self._procs_lock:
+            self._procs.append(proc)
+
+    def unregister(self, proc):
+        with self._procs_lock:
+            if proc in self._procs:
+                self._procs.remove(proc)
+
+    def stop(self):
+        self.stop_event.set()
+        with self._procs_lock:
+            procs = list(self._procs)
+        for proc in procs:
+            if proc.poll() is None:
+                try:
+                    proc.send_signal(signal.SIGINT)
+                except ProcessLookupError:
+                    pass
+
+
 class CameraManager:
     """picamera2(プレビュー)とrpicam-vid/rpicam-jpeg(録画)の排他制御を行う。
 
@@ -33,7 +67,7 @@ class CameraManager:
         self.picam2 = None
         self.output = None
         self.record_dir = None
-        self.stop_event = None
+        self.recording_handle = None
 
     def get_status(self):
         with self.lock:
@@ -77,36 +111,37 @@ class CameraManager:
                 return False, "既に撮影中です"
             self._stop_preview_locked()
 
-            stop_event = threading.Event()
-            self.stop_event = stop_event
+            handle = RecordingHandle()
+            self.recording_handle = handle
             self.record_dir = record_dir
             self.state = STATE_RECORDING
 
         thread = threading.Thread(
-            target=self._run_recording, args=(record_dir, audio, stop_event), daemon=True
+            target=self._run_recording, args=(record_dir, audio, handle), daemon=True
         )
         thread.start()
         return True, None
 
     def stop_recording(self):
         with self.lock:
-            if self.state != STATE_RECORDING or self.stop_event is None:
+            if self.state != STATE_RECORDING or self.recording_handle is None:
                 return False
-            self.stop_event.set()
-            return True
+            handle = self.recording_handle
+        handle.stop()
+        return True
 
-    def _run_recording(self, record_dir, audio, stop_event):
+    def _run_recording(self, record_dir, audio, handle):
         import recording
 
         try:
-            recording.run_recording_loop(record_dir, audio, stop_event, self.settings_path)
+            recording.run_recording_loop(record_dir, audio, handle, self.settings_path)
         except Exception:
             logging.exception("recording loop failed")
         finally:
             with self.lock:
                 self.state = STATE_IDLE
                 self.record_dir = None
-                self.stop_event = None
+                self.recording_handle = None
 
     def _stop_preview_locked(self):
         if self.state != STATE_PREVIEW:
