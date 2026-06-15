@@ -54,6 +54,22 @@
   <button type="submit" class="button"{% if status.state == "recording" %} disabled{% endif %}>この端末の時刻でRPiの時計を設定する</button>
 </form>
 
+<h4>時刻を手動で入力する</h4>
+<p class="hint">この端末の時刻が正しくない場合、年・月・日・時・分・秒を直接入力して設定できます。</p>
+
+<form method="post" action="{{ url_for('set_time') }}" id="time-form-manual" onsubmit="return confirm('入力した時刻でRPiの時計を設定します。よろしいですか？');">
+  <input type="hidden" name="datetime" id="datetime-input-manual">
+  <div class="time-fields">
+    <label>年(4桁)<input type="number" id="manual-year" min="2000" max="2099" step="1" value="{{ rpi_time[0:4] }}" required></label>
+    <label>月<input type="number" id="manual-month" min="1" max="12" step="1" value="{{ rpi_time[5:7] }}" required></label>
+    <label>日<input type="number" id="manual-day" min="1" max="31" step="1" value="{{ rpi_time[8:10] }}" required></label>
+    <label>時<input type="number" id="manual-hour" min="0" max="23" step="1" value="{{ rpi_time[11:13] }}" required></label>
+    <label>分<input type="number" id="manual-minute" min="0" max="59" step="1" value="{{ rpi_time[14:16] }}" required></label>
+    <label>秒<input type="number" id="manual-second" min="0" max="59" step="1" value="{{ rpi_time[17:19] }}" required></label>
+  </div>
+  <button type="submit" class="button"{% if status.state == "recording" %} disabled{% endif %}>入力した時刻でRPiの時計を設定する</button>
+</form>
+
 <script>
   function pad(n) {
     return String(n).padStart(2, "0");
@@ -65,6 +81,16 @@
   document.getElementById("browser-time").textContent = formatDateTime(new Date());
   document.getElementById("time-form").addEventListener("submit", function () {
     document.getElementById("datetime-input").value = formatDateTime(new Date());
+  });
+  document.getElementById("time-form-manual").addEventListener("submit", function () {
+    var year = document.getElementById("manual-year").value;
+    var month = pad(document.getElementById("manual-month").value);
+    var day = pad(document.getElementById("manual-day").value);
+    var hour = pad(document.getElementById("manual-hour").value);
+    var minute = pad(document.getElementById("manual-minute").value);
+    var second = pad(document.getElementById("manual-second").value);
+    document.getElementById("datetime-input-manual").value =
+      year + "-" + month + "-" + day + " " + hour + ":" + minute + ":" + second;
   });
 </script>
 
