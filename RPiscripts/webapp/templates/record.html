@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}撮影を開始 - RPi連続撮影{% endblock %}
+{% block content %}
+<h2>撮影を開始</h2>
+
+{% if busy %}
+  <p>現在撮影中です。撮影を停止してから新しい撮影を開始してください。</p>
+  <p><a class="button" href="{{ url_for('index') }}">状態に戻る</a></p>
+{% else %}
+  {% if error %}
+    <p class="error">{{ error }}</p>
+  {% endif %}
+  <form method="post">
+    <label>
+      撮影対象名<br>
+      <input type="text" name="object_name" required>
+      <p class="hint">フォルダ名に使用します。対象種、集団 etc.</p>
+    </label>
+    <label>
+      メタデータ<br>
+      <textarea name="metadata" rows="4"></textarea>
+      <p class="hint">撮影に関する情報をメモとして残せます。例: 撮影場所、撮影者、対象種の詳細、天気等</p>
+    </label>
+    <label>
+      <input type="checkbox" name="audio">
+      音声も録音する(USBマイクが接続されている必要があります)
+    </label>
+    <button type="submit" class="button">撮影を開始する</button>
+  </form>
+{% endif %}
+{% endblock %}

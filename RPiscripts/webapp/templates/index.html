@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}状態 - RPi連続撮影{% endblock %}
+{% block content %}
+<section class="status">
+  <h2>状態</h2>
+  {% if status.state == "idle" %}
+    <p class="state state-idle">待機中</p>
+  {% elif status.state == "preview" %}
+    <p class="state state-preview">プレビュー中</p>
+  {% elif status.state == "recording" %}
+    <p class="state state-recording">撮影中: {{ folder_name }}</p>
+  {% endif %}
+</section>
+
+<section class="actions">
+  {% if status.state != "recording" %}
+    <a class="button" href="{{ url_for('preview') }}">プレビューを見る</a>
+    <a class="button" href="{{ url_for('record') }}">撮影を開始する</a>
+  {% else %}
+    <form method="post" action="{{ url_for('record_stop') }}" onsubmit="return confirm('撮影を停止しますか？');">
+      <button type="submit" class="button button-danger">撮影を停止する</button>
+    </form>
+  {% endif %}
+</section>
+
+<section class="version">
+  <p>RPi側 VERSION: {{ rpi_version }}</p>
+  <p>タブレット側 VERSION: {{ tablet_version }}</p>
+</section>
+{% endblock %}

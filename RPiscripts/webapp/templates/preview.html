@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}プレビュー - RPi連続撮影{% endblock %}
+{% block content %}
+<h2>プレビュー</h2>
+{% if available %}
+  <img src="{{ url_for('stream_mjpg') }}" alt="カメラプレビュー">
+{% else %}
+  <p class="error">{{ error or "プレビューを利用できません" }}</p>
+{% endif %}
+<p><a href="{{ url_for('index') }}">状態に戻る</a></p>
+{% endblock %}
