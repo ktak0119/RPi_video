@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}設定 - RPi連続撮影{% endblock %}
+{% block content %}
+<h2>撮影設定</h2>
+
+<p class="hint">
+  設定は次回の撮影開始時から反映されます(撮影中の動画には影響しません)。
+  プレビューの画質・解像度には影響しません。
+</p>
+
+{% if success %}
+  <p class="success">設定を保存しました</p>
+{% endif %}
+
+<form method="post">
+  {% for key, label, unit, min_val, max_val, desc in fields %}
+  <label>
+    {{ label }}({{ unit }})<br>
+    <input type="number" name="{{ key }}" value="{{ current.get(key, '') }}" min="{{ min_val }}" max="{{ max_val }}" required>
+    <p class="hint">{{ desc }}。設定可能範囲: {{ min_val }}~{{ max_val }} {{ unit }}</p>
+    {% if errors.get(key) %}
+      <p class="error">{{ errors[key] }}</p>
+    {% endif %}
+  </label>
+  {% endfor %}
+
+  <label>
+    音声入力デバイス<br>
+    <input type="text" name="audio_device" value="{{ current.get('audio_device', '') }}" required>
+    <p class="hint">USBマイクのALSAデバイス名(例: plughw:1,0)</p>
+    {% if errors.get('audio_device') %}
+      <p class="error">{{ errors['audio_device'] }}</p>
+    {% endif %}
+  </label>
+
+  <button type="submit" class="button">設定を保存する</button>
+</form>
+
+<p><a href="{{ url_for('index') }}">状態に戻る</a></p>
+{% endblock %}

@@ -54,6 +54,11 @@ header h1 a {
   font-weight: bold;
 }
 
+.success {
+  color: #2c7be5;
+  font-weight: bold;
+}
+
 .hint {
   font-size: 0.85rem;
   color: #666;

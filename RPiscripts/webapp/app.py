@@ -5,6 +5,7 @@ from datetime import datetime
 from flask import Flask, Response, redirect, render_template, request, url_for
 
 import camera_manager
+import common
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SETTINGS_PATH = os.path.join(BASE_DIR, "imageSetting.txt")
@@ -13,6 +14,16 @@ RPI_ID = socket.gethostname()
 
 app = Flask(__name__)
 manager = camera_manager.CameraManager(SETTINGS_PATH)
+
+# key, ラベル, 単位, 最小値, 最大値, 説明
+SETTINGS_FIELDS = [
+    ("width", "横解像度", "px", 1, 2400, "動画の横解像度"),
+    ("height", "縦解像度", "px", 1, 2400, "動画の縦解像度"),
+    ("framerate", "フレームレート", "fps", 1, 40, "1秒あたりのフレーム数"),
+    ("bitrate", "ビットレート", "bps", 100000, 25000000, "映像のビットレート(画質に影響)"),
+    ("video_duration", "1ファイルの撮影時間", "秒", 1, 3600, "1つの動画ファイルあたりの撮影時間"),
+    ("video_number", "撮影ファイル数の上限", "個", 1, 1000, "1回の撮影で作成するファイル数の上限"),
+]
 
 
 def read_version(path):
@@ -107,6 +118,45 @@ def record():
 def record_stop():
     manager.stop_recording()
     return redirect(url_for("index"))
+
+
+@app.route("/settings", methods=["GET", "POST"])
+def settings():
+    current = common.load_settings(SETTINGS_PATH)
+    errors = {}
+    success = False
+
+    if request.method == "POST":
+        values = {}
+        for key, label, unit, min_val, max_val, desc in SETTINGS_FIELDS:
+            raw = request.form.get(key, "").strip()
+            try:
+                num = int(raw)
+                if not (min_val <= num <= max_val):
+                    raise ValueError
+            except ValueError:
+                errors[key] = f"{min_val}から{max_val}の範囲の整数で入力してください"
+                values[key] = raw
+            else:
+                values[key] = str(num)
+
+        audio_device = request.form.get("audio_device", "").strip()
+        if not audio_device:
+            errors["audio_device"] = "ALSAデバイス名を入力してください"
+        values["audio_device"] = audio_device
+
+        current = values
+        if not errors:
+            common.save_settings(SETTINGS_PATH, values)
+            success = True
+
+    return render_template(
+        "settings.html",
+        fields=SETTINGS_FIELDS,
+        current=current,
+        errors=errors,
+        success=success,
+    )
 
 
 if __name__ == "__main__":
