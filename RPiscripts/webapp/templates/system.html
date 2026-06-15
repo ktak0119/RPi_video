@@ -3,13 +3,6 @@
 {% block content %}
 <h2>システム</h2>
 
-<h3>カメラプロセスのリセット</h3>
-<p class="hint">
-  プレビューで「カメラの初期化に失敗しました」と表示される場合、
-  以前の撮影停止処理が正常に終わらず、撮影用プロセスが残っていることがあります。
-  このボタンでそれらのプロセスを強制終了できます。撮影中は使用できません。
-</p>
-
 {% if message %}
   <p class="success">{{ message }}</p>
 {% endif %}
@@ -17,9 +10,63 @@
   <p class="error">{{ error }}</p>
 {% endif %}
 
+<h3>カメラプロセスのリセット</h3>
+<p class="hint">
+  プレビューで「カメラの初期化に失敗しました」と表示される場合、
+  以前の撮影停止処理が正常に終わらず、撮影用プロセスが残っていることがあります。
+  このボタンでそれらのプロセスを強制終了できます。撮影中は使用できません。
+</p>
+
 <form method="post" action="{{ url_for('reset_camera') }}" onsubmit="return confirm('カメラ関連プロセスを強制終了します。よろしいですか？');">
   <button type="submit" class="button"{% if status.state == "recording" %} disabled{% endif %}>カメラプロセスをリセット</button>
 </form>
 
-<p><a href="{{ url_for('index') }}">状態に戻る</a></p>
+<h3>再起動・シャットダウン</h3>
+<p class="hint">
+  上記でも復旧しない場合は、RPi本体の再起動を行ってください。
+  再起動・シャットダウンは1分後に実行されます。誤って押した場合は
+  「予約をキャンセル」で取り消せます。撮影中は使用できません。
+</p>
+
+<form method="post" action="{{ url_for('reboot') }}" onsubmit="return confirm('1分後にRPiを再起動します。よろしいですか？');">
+  <button type="submit" class="button"{% if status.state == "recording" %} disabled{% endif %}>再起動</button>
+</form>
+
+<form method="post" action="{{ url_for('shutdown') }}" onsubmit="return confirm('1分後にRPiをシャットダウンします。よろしいですか？');">
+  <button type="submit" class="button button-danger"{% if status.state == "recording" %} disabled{% endif %}>シャットダウン</button>
+</form>
+
+<form method="post" action="{{ url_for('cancel_shutdown') }}" onsubmit="return confirm('再起動/シャットダウンの予約を取り消します。よろしいですか？');">
+  <button type="submit" class="button">予約をキャンセル</button>
+</form>
+
+<h3>時刻設定</h3>
+<p class="hint">
+  RPi本体に正確な時刻が設定されていないと、撮影データのファイル名(時刻)が
+  ずれてしまいます。この端末の時刻が正しい場合、以下のボタンでRPiの時計を
+  この端末の時刻に合わせることができます。撮影中は使用できません。
+</p>
+<p>RPi本体の時刻: {{ rpi_time }}</p>
+<p>この端末の時刻: <span id="browser-time">-</span></p>
+
+<form method="post" action="{{ url_for('set_time') }}" id="time-form" onsubmit="return confirm('この端末の時刻でRPiの時計を設定します。よろしいですか？');">
+  <input type="hidden" name="datetime" id="datetime-input">
+  <button type="submit" class="button"{% if status.state == "recording" %} disabled{% endif %}>この端末の時刻でRPiの時計を設定する</button>
+</form>
+
+<script>
+  function pad(n) {
+    return String(n).padStart(2, "0");
+  }
+  function formatDateTime(d) {
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + " "
+      + pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds());
+  }
+  document.getElementById("browser-time").textContent = formatDateTime(new Date());
+  document.getElementById("time-form").addEventListener("submit", function () {
+    document.getElementById("datetime-input").value = formatDateTime(new Date());
+  });
+</script>
+
+<p><a href="{{ url_for('index') }}">ホームに戻る</a></p>
 {% endblock %}

@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -29,6 +30,8 @@ SETTINGS_FIELDS = [
 
 # 停止スタック後に孤立しうる録画用プロセス
 RESET_PROCESS_NAMES = ("rpicam-vid", "rpicam-jpeg", "arecord")
+
+DATETIME_RE = re.compile(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$")
 
 
 def read_version(path):
@@ -213,21 +216,67 @@ def data_delete(folder):
     return redirect(url_for("data"))
 
 
+def _render_system(error=None, message=None):
+    return render_template(
+        "system.html",
+        status=manager.get_status(),
+        rpi_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        error=error,
+        message=message,
+    )
+
+
 @app.route("/system")
 def system_page():
-    return render_template("system.html", status=manager.get_status(), error=None, message=None)
+    return _render_system()
 
 
 @app.route("/system/reset_camera", methods=["POST"])
 def reset_camera():
-    status = manager.get_status()
-    if status["state"] == camera_manager.STATE_RECORDING:
-        return render_template("system.html", status=status, error="撮影中はリセットできません", message=None)
+    if manager.get_status()["state"] == camera_manager.STATE_RECORDING:
+        return _render_system(error="撮影中はリセットできません")
 
     for name in RESET_PROCESS_NAMES:
         subprocess.run(["pkill", "-9", "-f", name])
 
-    return render_template("system.html", status=status, error=None, message="カメラプロセスをリセットしました")
+    return _render_system(message="カメラプロセスをリセットしました")
+
+
+@app.route("/system/reboot", methods=["POST"])
+def reboot():
+    if manager.get_status()["state"] == camera_manager.STATE_RECORDING:
+        return _render_system(error="撮影中は実行できません")
+
+    subprocess.run(["sudo", "shutdown", "-r", "+1"])
+    return _render_system(message="1分後に再起動します")
+
+
+@app.route("/system/shutdown", methods=["POST"])
+def shutdown():
+    if manager.get_status()["state"] == camera_manager.STATE_RECORDING:
+        return _render_system(error="撮影中は実行できません")
+
+    subprocess.run(["sudo", "shutdown", "-h", "+1"])
+    return _render_system(message="1分後にシャットダウンします")
+
+
+@app.route("/system/cancel_shutdown", methods=["POST"])
+def cancel_shutdown():
+    subprocess.run(["sudo", "shutdown", "-c"])
+    return _render_system(message="再起動/シャットダウンの予約を取り消しました")
+
+
+@app.route("/system/set_time", methods=["POST"])
+def set_time():
+    if manager.get_status()["state"] == camera_manager.STATE_RECORDING:
+        return _render_system(error="撮影中は実行できません")
+
+    value = request.form.get("datetime", "").strip()
+    if not DATETIME_RE.match(value):
+        return _render_system(error="時刻の形式が不正です")
+
+    subprocess.run(["sudo", "date", "--set=" + value])
+    return _render_system(message=f"RPiの時計を{value}に設定しました")
 
 
 if __name__ == "__main__":

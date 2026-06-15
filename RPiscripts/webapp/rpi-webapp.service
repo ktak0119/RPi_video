@@ -1,0 +1,16 @@
+[Unit]
+Description=RPi連続撮影 Web UI (Flask)
+After=network.target
+
+[Service]
+Type=simple
+# 実行ユーザーがpi以外の場合はUserを変更する(WorkingDirectory/ExecStartの%hも追従する)
+User=pi
+# リポジトリ(RPi_video)のclone先パスに合わせて変更する(例: %h/RPi_video/RPiscripts/webapp)
+WorkingDirectory=%h/RPi_video/RPiscripts/webapp
+ExecStart=/usr/bin/python3 %h/RPi_video/RPiscripts/webapp/app.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
