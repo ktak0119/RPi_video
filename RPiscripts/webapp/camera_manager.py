@@ -68,6 +68,7 @@ class CameraManager:
         self.output = None
         self.record_dir = None
         self.recording_handle = None
+        self.recording_thread = None
 
     def get_status(self):
         with self.lock:
@@ -112,13 +113,14 @@ class CameraManager:
             self._stop_preview_locked()
 
             handle = RecordingHandle()
+            thread = threading.Thread(
+                target=self._run_recording, args=(record_dir, audio, handle), daemon=True
+            )
             self.recording_handle = handle
+            self.recording_thread = thread
             self.record_dir = record_dir
             self.state = STATE_RECORDING
 
-        thread = threading.Thread(
-            target=self._run_recording, args=(record_dir, audio, handle), daemon=True
-        )
         thread.start()
         return True, None
 
@@ -127,7 +129,9 @@ class CameraManager:
             if self.state != STATE_RECORDING or self.recording_handle is None:
                 return False
             handle = self.recording_handle
+            thread = self.recording_thread
         handle.stop()
+        thread.join(timeout=10)
         return True
 
     def _run_recording(self, record_dir, audio, handle):
@@ -142,6 +146,7 @@ class CameraManager:
                 self.state = STATE_IDLE
                 self.record_dir = None
                 self.recording_handle = None
+                self.recording_thread = None
 
     def _stop_preview_locked(self):
         if self.state != STATE_PREVIEW:

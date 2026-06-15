@@ -13,8 +13,8 @@
 </section>
 
 <section class="actions">
+  <a class="button" href="{{ url_for('preview') }}">プレビューを見る</a>
   {% if status.state != "recording" %}
-    <a class="button" href="{{ url_for('preview') }}">プレビューを見る</a>
     <a class="button" href="{{ url_for('record') }}">撮影を開始する</a>
   {% else %}
     <form method="post" action="{{ url_for('record_stop') }}" onsubmit="return confirm('撮影を停止しますか？');">
