@@ -8,6 +8,11 @@ STATE_IDLE = "idle"
 STATE_PREVIEW = "preview"
 STATE_RECORDING = "recording"
 
+# プレビューは安定性重視のため、撮影解像度とは独立して軽量な設定で固定する
+PREVIEW_SIZE = (640, 480)
+PREVIEW_FRAMERATE = 10
+PREVIEW_BITRATE = 1_000_000
+
 
 class StreamingOutput(io.BufferedIOBase):
     def __init__(self):
@@ -99,8 +104,12 @@ class CameraManager:
 
                 output = StreamingOutput()
                 picam2 = Picamera2()
-                picam2.configure(picam2.create_video_configuration(main={"size": (640, 480)}))
-                picam2.start_recording(MJPEGEncoder(), FileOutput(output))
+                config = picam2.create_video_configuration(
+                    main={"size": PREVIEW_SIZE},
+                    controls={"FrameRate": PREVIEW_FRAMERATE},
+                )
+                picam2.configure(config)
+                picam2.start_recording(MJPEGEncoder(bitrate=PREVIEW_BITRATE), FileOutput(output))
             except Exception as e:
                 return False, f"カメラの初期化に失敗しました: {e}"
 
