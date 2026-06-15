@@ -12,7 +12,7 @@ import common
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SETTINGS_PATH = os.path.join(BASE_DIR, "imageSetting.txt")
-RECORD_DIR = os.path.join(BASE_DIR, "..", "record")
+RECORD_DIR = os.path.join(BASE_DIR, "record")
 RPI_ID = socket.gethostname()
 
 app = Flask(__name__)
@@ -50,7 +50,7 @@ def index():
         "index.html",
         status=status,
         folder_name=folder_name,
-        rpi_version=read_version(os.path.join(BASE_DIR, "..", "VERSION")),
+        rpi_version=read_version(os.path.join(BASE_DIR, "VERSION")),
     )
 
 

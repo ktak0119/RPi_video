@@ -9,8 +9,8 @@ User=pi
 # リポジトリ(RPi_video)のclone先パスに合わせて変更する。
 # 注意: systemdのシステムサービスでは%hは常に/rootに展開されるため、
 # User=を変更しても%hは追従しない。実際のホームディレクトリの絶対パスを書くこと
-WorkingDirectory=/home/pi/RPi_video/RPiscripts/webapp
-ExecStart=/usr/bin/python3 /home/pi/RPi_video/RPiscripts/webapp/app.py
+WorkingDirectory=/home/pi/RPi_video
+ExecStart=/usr/bin/python3 /home/pi/RPi_video/app.py
 Restart=on-failure
 RestartSec=5
 
