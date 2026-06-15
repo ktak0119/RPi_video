@@ -62,5 +62,14 @@ sudo visudo -f /etc/sudoers.d/rpi-webapp
 <user> ALL=(ALL) NOPASSWD: /usr/sbin/shutdown, /usr/bin/date
 ```
 
-設定後、`sudo -n shutdown -h +1 && sudo shutdown -c`でパスワード無しで
-実行できるか確認できる(`sudo -n`はパスワード入力が必要な場合エラーになる)。
+- nanoの場合: `Ctrl+O` → `Enter`(保存) → `Ctrl+X`(終了)
+- viの場合: `Esc` → `:wq` → `Enter`
+- `visudo`は保存時に文法チェックを行うので、エラーが出た場合は指示に従って修正する
+
+設定後、`sudo -n shutdown -h +1 && echo OK`でパスワード無しで実行できるか
+確認できる(`sudo -n`はパスワード入力が必要な場合エラーになる)。`OK`が
+表示されたらすぐに`sudo -n shutdown -c`でキャンセルする。
+
+webapp経由で再起動・シャットダウン・時刻設定を試した後、
+`sudo journalctl -u rpi-webapp.service -n 10 --no-pager`で
+`sudo: a password is required`等のエラーが出ていないか確認する。
