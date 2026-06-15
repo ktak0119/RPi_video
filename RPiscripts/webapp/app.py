@@ -1,8 +1,10 @@
 import os
+import shutil
 import socket
+import subprocess
 from datetime import datetime
 
-from flask import Flask, Response, redirect, render_template, request, url_for
+from flask import Flask, Response, abort, redirect, render_template, request, send_from_directory, url_for
 
 import camera_manager
 import common
@@ -24,6 +26,9 @@ SETTINGS_FIELDS = [
     ("video_duration", "1ファイルの撮影時間", "秒", 1, 3600, "1つの動画ファイルあたりの撮影時間"),
     ("video_number", "撮影ファイル数の上限", "個", 1, 1000, "1回の撮影で作成するファイル数の上限"),
 ]
+
+# 停止スタック後に孤立しうる録画用プロセス
+RESET_PROCESS_NAMES = ("rpicam-vid", "rpicam-jpeg", "arecord")
 
 
 def read_version(path):
@@ -157,6 +162,73 @@ def settings():
         errors=errors,
         success=success,
     )
+
+
+def _recording_path(folder):
+    if not os.path.isdir(RECORD_DIR) or folder not in os.listdir(RECORD_DIR):
+        abort(404)
+    path = os.path.join(RECORD_DIR, folder)
+    if not os.path.isdir(path):
+        abort(404)
+    return path
+
+
+@app.route("/data")
+def data():
+    recordings = common.list_recordings(RECORD_DIR)
+    return render_template("data.html", recordings=recordings, human_size=common.human_size)
+
+
+@app.route("/data/<folder>")
+def data_detail(folder):
+    _recording_path(folder)
+    files, memo = common.get_recording_files(RECORD_DIR, folder)
+    return render_template(
+        "data_detail.html", folder=folder, files=files, memo=memo, human_size=common.human_size, error=None
+    )
+
+
+@app.route("/data/<folder>/file/<filename>")
+def data_file(folder, filename):
+    record_dir = _recording_path(folder)
+    return send_from_directory(record_dir, filename)
+
+
+@app.route("/data/<folder>/delete", methods=["POST"])
+def data_delete(folder):
+    record_dir = _recording_path(folder)
+
+    status = manager.get_status()
+    if status["record_dir"] and os.path.abspath(status["record_dir"]) == os.path.abspath(record_dir):
+        files, memo = common.get_recording_files(RECORD_DIR, folder)
+        return render_template(
+            "data_detail.html",
+            folder=folder,
+            files=files,
+            memo=memo,
+            human_size=common.human_size,
+            error="撮影中のフォルダは削除できません",
+        )
+
+    shutil.rmtree(record_dir)
+    return redirect(url_for("data"))
+
+
+@app.route("/system")
+def system_page():
+    return render_template("system.html", status=manager.get_status(), error=None, message=None)
+
+
+@app.route("/system/reset_camera", methods=["POST"])
+def reset_camera():
+    status = manager.get_status()
+    if status["state"] == camera_manager.STATE_RECORDING:
+        return render_template("system.html", status=status, error="撮影中はリセットできません", message=None)
+
+    for name in RESET_PROCESS_NAMES:
+        subprocess.run(["pkill", "-9", "-f", name])
+
+    return render_template("system.html", status=status, error=None, message="カメラプロセスをリセットしました")
 
 
 if __name__ == "__main__":

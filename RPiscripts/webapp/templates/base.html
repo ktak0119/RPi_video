@@ -10,6 +10,13 @@
 <body>
   <header>
     <h1><a href="{{ url_for('index') }}">RPi連続撮影システム</a></h1>
+    <nav>
+      <a href="{{ url_for('index') }}">状態</a>
+      <a href="{{ url_for('preview') }}">プレビュー</a>
+      <a href="{{ url_for('data') }}">データ</a>
+      <a href="{{ url_for('settings') }}">設定</a>
+      <a href="{{ url_for('system_page') }}">システム</a>
+    </nav>
   </header>
   <main>
     {% block content %}{% endblock %}

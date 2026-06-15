@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}データ - RPi連続撮影{% endblock %}
+{% block content %}
+<h2>録画データ</h2>
+
+{% if not recordings %}
+  <p>録画データはありません</p>
+{% else %}
+  <div class="data-grid">
+    {% for rec in recordings %}
+    <a class="data-card" href="{{ url_for('data_detail', folder=rec.name) }}">
+      {% if rec.thumbnail %}
+        <img src="{{ url_for('data_file', folder=rec.name, filename=rec.thumbnail) }}" alt="{{ rec.name }}">
+      {% endif %}
+      <p>{{ rec.name }}</p>
+      <p class="hint">{{ rec.file_count }}ファイル / {{ human_size(rec.total_size) }}</p>
+    </a>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}

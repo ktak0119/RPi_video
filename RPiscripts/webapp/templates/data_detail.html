@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ folder }} - RPi連続撮影{% endblock %}
+{% block content %}
+<h2>{{ folder }}</h2>
+
+{% if error %}
+  <p class="error">{{ error }}</p>
+{% endif %}
+
+{% if memo %}
+<h3>メモ</h3>
+<pre>{{ memo }}</pre>
+{% endif %}
+
+{% set images = files | selectattr("is_image") | list %}
+{% if images %}
+<h3>サムネイル</h3>
+<div class="data-grid">
+  {% for file in images %}
+  <div class="data-card">
+    <img src="{{ url_for('data_file', folder=folder, filename=file.name) }}" alt="{{ file.name }}">
+    <p class="hint">{{ file.name }}</p>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<h3>ファイル一覧</h3>
+<ul>
+  {% for file in files %}
+  <li>{{ file.name }} ({{ human_size(file.size) }})</li>
+  {% endfor %}
+</ul>
+
+<form method="post" action="{{ url_for('data_delete', folder=folder) }}" onsubmit="return confirm('「{{ folder }}」を削除します。元に戻せません。よろしいですか？');">
+  <button type="submit" class="button button-danger">このフォルダを削除する</button>
+</form>
+
+<p><a href="{{ url_for('data') }}">一覧に戻る</a></p>
+{% endblock %}
