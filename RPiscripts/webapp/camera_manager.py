@@ -68,7 +68,6 @@ class CameraManager:
         self.output = None
         self.record_dir = None
         self.recording_handle = None
-        self.recording_thread = None
 
     def get_status(self):
         with self.lock:
@@ -88,7 +87,7 @@ class CameraManager:
 
                 output = StreamingOutput()
                 picam2 = Picamera2()
-                picam2.configure(picam2.create_video_configuration(main={"size": (640, 480)}))
+                picam2.configure(picam2.create_video_configuration(main={"size": (320, 240)}))
                 picam2.start_recording(MJPEGEncoder(), FileOutput(output))
             except Exception as e:
                 return False, f"カメラの初期化に失敗しました: {e}"
@@ -99,25 +98,37 @@ class CameraManager:
             return True, None
 
     def next_frame(self):
-        output = self.output
-        if output is None:
-            return None
-        with output.condition:
-            output.condition.wait(timeout=5)
-            return output.frame
+        while True:
+            with self.lock:
+                if self.state != STATE_PREVIEW:
+                    return None
+                output = self.output
+            if output is None:
+                return None
+            with output.condition:
+                output.condition.wait(timeout=5)
+                frame = output.frame
+            if frame is not None:
+                return frame
 
     def start_recording(self, record_dir, audio):
         with self.lock:
             if self.state == STATE_RECORDING:
                 return False, "既に撮影中です"
-            self._stop_preview_locked()
+
+            picam2_to_release = None
+            if self.state == STATE_PREVIEW:
+                picam2_to_release = self.picam2
+                self.picam2 = None
+                self.output = None
 
             handle = RecordingHandle()
             thread = threading.Thread(
-                target=self._run_recording, args=(record_dir, audio, handle), daemon=True
+                target=self._run_recording,
+                args=(record_dir, audio, handle, picam2_to_release),
+                daemon=True,
             )
             self.recording_handle = handle
-            self.recording_thread = thread
             self.record_dir = record_dir
             self.state = STATE_RECORDING
 
@@ -129,12 +140,17 @@ class CameraManager:
             if self.state != STATE_RECORDING or self.recording_handle is None:
                 return False
             handle = self.recording_handle
-            thread = self.recording_thread
         handle.stop()
-        thread.join(timeout=3)
         return True
 
-    def _run_recording(self, record_dir, audio, handle):
+    def _run_recording(self, record_dir, audio, handle, picam2_to_release):
+        if picam2_to_release is not None:
+            try:
+                picam2_to_release.stop_recording()
+                picam2_to_release.close()
+            except Exception:
+                logging.exception("failed to release preview camera")
+
         import recording
 
         try:
@@ -146,13 +162,3 @@ class CameraManager:
                 self.state = STATE_IDLE
                 self.record_dir = None
                 self.recording_handle = None
-                self.recording_thread = None
-
-    def _stop_preview_locked(self):
-        if self.state != STATE_PREVIEW:
-            return
-        self.picam2.stop_recording()
-        self.picam2.close()
-        self.picam2 = None
-        self.output = None
-        self.state = STATE_IDLE
