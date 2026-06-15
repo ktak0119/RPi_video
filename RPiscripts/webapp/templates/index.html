@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}状態 - RPi連続撮影{% endblock %}
+{% block title %}ホーム - RPi連続撮影{% endblock %}
 {% block extra_head %}
 {% if status.state == "recording" %}
 <meta http-equiv="refresh" content="3">
@@ -30,11 +30,9 @@
       <button type="submit" class="button button-danger">撮影を停止する</button>
     </form>
   {% endif %}
-  <a class="button" href="{{ url_for('settings') }}">設定を変更する</a>
 </section>
 
 <section class="version">
   <p>RPi側 VERSION: {{ rpi_version }}</p>
-  <p>タブレット側 VERSION: {{ tablet_version }}</p>
 </section>
 {% endblock %}

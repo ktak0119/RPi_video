@@ -48,7 +48,6 @@ def index():
         status=status,
         folder_name=folder_name,
         rpi_version=read_version(os.path.join(BASE_DIR, "..", "VERSION")),
-        tablet_version=read_version(os.path.join(BASE_DIR, "..", "..", "VERSION")),
     )
 
 
