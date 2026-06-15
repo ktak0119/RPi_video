@@ -34,6 +34,9 @@ class RecordingHandle:
 
     def register(self, proc):
         with self._procs_lock:
+            if self.stop_event.is_set():
+                self._signal(proc)
+                return
             self._procs.append(proc)
 
     def unregister(self, proc):
@@ -42,15 +45,19 @@ class RecordingHandle:
                 self._procs.remove(proc)
 
     def stop(self):
-        self.stop_event.set()
         with self._procs_lock:
+            self.stop_event.set()
             procs = list(self._procs)
         for proc in procs:
-            if proc.poll() is None:
-                try:
-                    proc.send_signal(signal.SIGINT)
-                except ProcessLookupError:
-                    pass
+            self._signal(proc)
+
+    @staticmethod
+    def _signal(proc):
+        if proc.poll() is None:
+            try:
+                proc.send_signal(signal.SIGINT)
+            except ProcessLookupError:
+                pass
 
 
 class CameraManager:

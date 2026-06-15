@@ -25,7 +25,7 @@
   <a class="button" href="{{ url_for('preview') }}">プレビューを見る</a>
   {% if status.state != "recording" %}
     <a class="button" href="{{ url_for('record') }}">撮影を開始する</a>
-  {% elif not status.stopping %}
+  {% else %}
     <form method="post" action="{{ url_for('record_stop') }}" onsubmit="return confirm('撮影を停止しますか？');">
       <button type="submit" class="button button-danger">撮影を停止する</button>
     </form>
