@@ -83,7 +83,21 @@ def stream_mjpg():
             yield frame
             yield b"\r\n"
 
-    return Response(generate(), mimetype="multipart/x-mixed-replace; boundary=FRAME")
+    resp = Response(generate(), mimetype="multipart/x-mixed-replace; boundary=FRAME")
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
+    return resp
+
+
+@app.route("/latest.jpg")
+def latest_jpg():
+    frame = manager.get_latest_frame()
+    if frame is None:
+        abort(404)
+    resp = Response(frame, mimetype="image/jpeg")
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
+    return resp
 
 
 @app.route("/record", methods=["GET", "POST"])

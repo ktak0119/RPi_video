@@ -126,6 +126,12 @@ class CameraManager:
             output.condition.wait(timeout=5)
             return output.frame
 
+    def get_latest_frame(self):
+        output = self.output
+        if output is None or output.frame is None:
+            return None
+        return output.frame
+
     def start_recording(self, record_dir, audio):
         with self.lock:
             if self.state == STATE_RECORDING:

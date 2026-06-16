@@ -3,7 +3,57 @@
 {% block content %}
 <h2>プレビュー</h2>
 {% if available %}
-  <img src="{{ url_for('stream_mjpg') }}" alt="カメラプレビュー">
+  <p>
+    <button id="toggle-btn">静止画モードに切替</button>
+    <span id="mode-label" style="margin-left:0.5em; color:#666; font-size:0.9em;">ライブ(自動再接続あり)</span>
+  </p>
+  <img id="preview-img" src="{{ url_for('stream_mjpg') }}" alt="カメラプレビュー">
+  <script>
+    (function () {
+      var img = document.getElementById("preview-img");
+      var btn = document.getElementById("toggle-btn");
+      var label = document.getElementById("mode-label");
+      var mode = "live";
+      var reconnectTimer = null;
+      var stillTimer = null;
+      var LIVE_URL = {{ url_for('stream_mjpg') | tojson }};
+      var STILL_URL = {{ url_for('latest_jpg') | tojson }};
+
+      function startLive() {
+        clearInterval(stillTimer);
+        stillTimer = null;
+        img.src = LIVE_URL;
+        reconnectTimer = setInterval(function () {
+          img.src = LIVE_URL + "?t=" + Date.now();
+        }, 60000);
+        btn.textContent = "静止画モードに切替";
+        label.textContent = "ライブ(自動再接続あり)";
+      }
+
+      function startStill() {
+        clearInterval(reconnectTimer);
+        reconnectTimer = null;
+        img.src = STILL_URL + "?t=" + Date.now();
+        stillTimer = setInterval(function () {
+          img.src = STILL_URL + "?t=" + Date.now();
+        }, 1000);
+        btn.textContent = "ライブモードに切替";
+        label.textContent = "静止画(1秒更新)";
+      }
+
+      btn.addEventListener("click", function () {
+        if (mode === "live") {
+          mode = "still";
+          startStill();
+        } else {
+          mode = "live";
+          startLive();
+        }
+      });
+
+      startLive();
+    })();
+  </script>
 {% else %}
   <p class="error">{{ error or "プレビューを利用できません" }}</p>
 {% endif %}
