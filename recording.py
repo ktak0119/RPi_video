@@ -1,5 +1,6 @@
 import os
 import subprocess
+import time
 import traceback
 from datetime import datetime
 
@@ -24,14 +25,47 @@ def start_audio(wav_path, duration, audio_device, handle):
 
 
 def record_video(h264_path, width, height, framerate, bitrate, duration, handle):
-    proc = subprocess.Popen([
-        "rpicam-vid", "-t", str(duration * 1000), "-o", h264_path, "-n",
-        "--width", width, "--height", height,
-        "--framerate", framerate, "--bitrate", bitrate,
-    ])
-    handle.register(proc)
-    proc.wait()
-    handle.unregister(proc)
+    from picamera2 import Picamera2, MappedArray
+    from picamera2.encoders import H264Encoder
+    from picamera2.outputs import FileOutput
+    import cv2
+
+    frame_count = 0
+    fps_label = f"{int(framerate)}fps"
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = max(0.5, int(width) / 1600)
+    thickness = 2
+
+    def pre_callback(request):
+        nonlocal frame_count
+        frame_count += 1
+        text = (
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            + f"  {fps_label}  #{frame_count:06d}"
+        )
+        with MappedArray(request, "main") as m:
+            (tw, th), _ = cv2.getTextSize(text, font, font_scale, thickness)
+            cv2.rectangle(m.array, (8, 8), (tw + 12, th + 16), (0, 0, 0), -1)
+            cv2.putText(m.array, text, (10, th + 12), font, font_scale, (255, 255, 255), thickness)
+
+    picam2 = Picamera2()
+    try:
+        config = picam2.create_video_configuration(
+            main={"size": (int(width), int(height))},
+            controls={"FrameRate": int(framerate)},
+        )
+        picam2.configure(config)
+        picam2.pre_callback = pre_callback
+        encoder = H264Encoder(bitrate=int(bitrate))
+        picam2.start_recording(encoder, FileOutput(h264_path))
+        deadline = time.monotonic() + duration
+        while time.monotonic() < deadline:
+            if handle.stop_event.is_set():
+                break
+            time.sleep(0.1)
+    finally:
+        picam2.stop_recording()
+        picam2.close()
 
 
 def run_recording_loop(record_dir, audio, handle, settings_path):

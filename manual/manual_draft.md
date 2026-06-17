@@ -81,7 +81,7 @@ ssh pi@<RPiの固定IP>
 
 ```bash
 sudo apt update
-sudo apt install -y python3-picamera2 rpicam-apps python3-flask alsa-utils git
+sudo apt install -y python3-picamera2 rpicam-apps python3-flask alsa-utils git python3-opencv
 ```
 
 ### ステップ6: Webアプリの取得
@@ -338,7 +338,7 @@ RPiにSSH接続した状態で以下を実行する。
 
 ```bash
 sudo apt update
-sudo apt install -y python3-picamera2 rpicam-apps python3-flask alsa-utils git
+sudo apt install -y python3-picamera2 rpicam-apps python3-flask alsa-utils git python3-opencv
 ```
 
 #### 3.4 カメラ・マイクの動作確認
