@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import shutil
@@ -72,16 +73,28 @@ def stream_mjpg():
     if manager.get_status()["state"] != camera_manager.STATE_PREVIEW:
         return "プレビューが開始されていません", 409
 
+    client_ip = request.remote_addr
+    ua = request.headers.get("User-Agent", "unknown")
+
     def generate():
-        while True:
-            frame = manager.next_frame()
-            if frame is None:
-                break
-            yield b"--FRAME\r\n"
-            yield b"Content-Type: image/jpeg\r\n"
-            yield f"Content-Length: {len(frame)}\r\n\r\n".encode()
-            yield frame
-            yield b"\r\n"
+        logging.info("MJPEG stream started: client=%s ua=%s", client_ip, ua)
+        try:
+            while True:
+                frame = manager.next_frame()
+                if frame is None:
+                    logging.warning("MJPEG: next_frame() returned None (timeout or stream stopped): client=%s", client_ip)
+                    break
+                yield b"--FRAME\r\n"
+                yield b"Content-Type: image/jpeg\r\n"
+                yield f"Content-Length: {len(frame)}\r\n\r\n".encode()
+                yield frame
+                yield b"\r\n"
+        except GeneratorExit:
+            logging.info("MJPEG: client disconnected (GeneratorExit): client=%s", client_ip)
+        except Exception as e:
+            logging.exception("MJPEG: unexpected error: %s client=%s", e, client_ip)
+        finally:
+            logging.info("MJPEG stream ended: client=%s", client_ip)
 
     resp = Response(generate(), mimetype="multipart/x-mixed-replace; boundary=FRAME")
     resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
@@ -294,4 +307,5 @@ def set_time():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     app.run(host="0.0.0.0", port=8080, threaded=True)

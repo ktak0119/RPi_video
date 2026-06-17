@@ -2,6 +2,7 @@ import io
 import logging
 import signal
 import threading
+import time
 from threading import Condition
 
 STATE_IDLE = "idle"
@@ -18,11 +19,21 @@ class StreamingOutput(io.BufferedIOBase):
     def __init__(self):
         self.frame = None
         self.condition = Condition()
+        self._frame_count = 0
+        self._last_log_time = time.monotonic()
 
     def write(self, buf):
         with self.condition:
             self.frame = buf
             self.condition.notify_all()
+        self._frame_count += 1
+        now = time.monotonic()
+        elapsed = now - self._last_log_time
+        if elapsed >= 10.0:
+            fps = self._frame_count / elapsed
+            logging.info("MJPEG frame size: %d bytes, fps: %.1f", len(buf), fps)
+            self._frame_count = 0
+            self._last_log_time = now
 
 
 class RecordingHandle:
