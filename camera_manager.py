@@ -11,8 +11,8 @@ STATE_RECORDING = "recording"
 
 # プレビューは安定性重視のため、撮影解像度とは独立してfpsを抑えた設定で固定する
 PREVIEW_SIZE = (640, 480)
-PREVIEW_FRAMERATE = 5
-PREVIEW_BITRATE = 4_000_000
+PREVIEW_FRAMERATE = 10
+PREVIEW_BITRATE = 8_000_000
 
 
 class StreamingOutput(io.BufferedIOBase):
