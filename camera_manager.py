@@ -11,7 +11,7 @@ STATE_RECORDING = "recording"
 
 # プレビューは安定性重視のため、撮影解像度とは独立してfpsを抑えた設定で固定する
 PREVIEW_SIZE = (640, 480)
-PREVIEW_FRAMERATE = 10
+PREVIEW_FRAMERATE = 8
 PREVIEW_BITRATE = 8_000_000
 
 
