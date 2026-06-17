@@ -8,6 +8,15 @@ Raspberry Piを用いた野外動画記録システムのための
 - **ハードウェア**: 部品表・配線図・組み立て手順・筐体加工情報・3Dプリントデータ等を
   [`hardware/`](hardware/) に収録。
 
+## 参考文献
+
+本システムのアイデアは以下の論文に基づいています:
+
+> Droissart, V., Azandi, L., Onguene, E. R., Savignac, M., Smith, T. B., & Deblauwe, V. (2021).
+> PICT: A low-cost, modular, open-source camera trap system to study plant–insect interactions.
+> *Methods in Ecology and Evolution*, 12(8), 1389–1396.
+> https://doi.org/10.1111/2041-210X.13618
+
 ## ライセンス
 
 | 対象 | ライセンス |
