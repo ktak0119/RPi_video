@@ -23,11 +23,8 @@
         clearInterval(stillTimer);
         stillTimer = null;
         img.src = LIVE_URL;
-        reconnectTimer = setInterval(function () {
-          img.src = LIVE_URL + "?t=" + Date.now();
-        }, 60000);
         btn.textContent = "静止画モードに切替";
-        label.textContent = "ライブ(自動再接続あり)";
+        label.textContent = "ライブ";
       }
 
       function startStill() {
