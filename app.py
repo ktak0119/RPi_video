@@ -27,6 +27,7 @@ SETTINGS_FIELDS = [
     ("bitrate", "ビットレート", "bps", 100000, 25000000, "映像のビットレート(画質に影響)"),
     ("video_duration", "1ファイルの撮影時間", "秒", 1, 3600, "1つの動画ファイルあたりの撮影時間"),
     ("video_number", "撮影ファイル数の上限", "個", 1, 1000, "1回の撮影で作成するファイル数の上限"),
+    ("mic_gain", "マイクゲイン", "%", 0, 100, "USBマイクの入力感度。録音した音声が小さい場合は大きくする"),
 ]
 
 # 停止スタック後に孤立しうる録画用プロセス
@@ -159,6 +160,7 @@ def settings():
     current = common.load_settings(SETTINGS_PATH)
     errors = {}
     success = False
+    gain_warning = None
 
     if request.method == "POST":
         values = {}
@@ -183,6 +185,7 @@ def settings():
         if not errors:
             common.save_settings(SETTINGS_PATH, values)
             success = True
+            gain_ok, gain_warning = common.set_mic_gain(values["audio_device"], int(values["mic_gain"]))
 
     return render_template(
         "settings.html",
@@ -190,6 +193,7 @@ def settings():
         current=current,
         errors=errors,
         success=success,
+        gain_warning=gain_warning,
     )
 
 

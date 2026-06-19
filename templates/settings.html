@@ -6,10 +6,14 @@
 <p class="hint">
   設定は次回の撮影開始時から反映されます(撮影中の動画には影響しません)。
   プレビューの画質・解像度には影響しません。
+  マイクゲインのみ保存時に即時反映されます。
 </p>
 
 {% if success %}
   <p class="success">設定を保存しました</p>
+  {% if gain_warning %}
+    <p class="error">マイクゲインの即時反映に失敗しました: {{ gain_warning }}(次回撮影開始時に再試行されます)</p>
+  {% endif %}
 {% endif %}
 
 <form method="post">

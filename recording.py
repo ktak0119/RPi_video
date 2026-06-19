@@ -76,7 +76,11 @@ def run_recording_loop(record_dir, audio, handle, settings_path):
     bitrate = settings["bitrate"]
     duration = int(settings["video_duration"])
     audio_device = settings.get("audio_device", "plughw:1,0")
+    mic_gain = settings.get("mic_gain")
     video_number = int(settings["video_number"])
+
+    if audio and mic_gain:
+        common.set_mic_gain(audio_device, int(mic_gain))
 
     for seq in range(1, video_number + 1):
         if handle.stop_event.is_set():

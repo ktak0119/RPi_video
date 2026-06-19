@@ -1,5 +1,7 @@
 import os
+import re
 import shutil
+import subprocess
 
 
 def load_settings(path="script/imageSetting.txt"):
@@ -22,7 +24,37 @@ SETTINGS_KEY_ORDER = (
     "video_duration",
     "video_number",
     "audio_device",
+    "mic_gain",
 )
+
+# USBマイクのコントロール名はデバイスにより異なるため、順に試す
+MIC_GAIN_CONTROLS = ("Mic", "Capture", "Mic Capture Volume")
+
+
+def parse_alsa_card(audio_device):
+    """'plughw:1,0' や 'hw:1,0' のようなALSAデバイス名からカード番号を取り出す"""
+    match = re.search(r"(?:plughw|hw):(\d+)", audio_device)
+    return match.group(1) if match else None
+
+
+def set_mic_gain(audio_device, percent):
+    """amixerでUSBマイクのキャプチャゲインを設定する。(成功したか, エラーメッセージ)を返す"""
+    card = parse_alsa_card(audio_device)
+    if card is None:
+        return False, f"ALSAデバイス名「{audio_device}」からカード番号を取得できませんでした"
+
+    try:
+        for control in MIC_GAIN_CONTROLS:
+            result = subprocess.run(
+                ["amixer", "-c", card, "sset", control, f"{percent}%"],
+                capture_output=True, text=True,
+            )
+            if result.returncode == 0:
+                return True, None
+    except OSError:
+        return False, "amixerコマンドが見つかりませんでした(alsa-utilsがインストールされているか確認してください)"
+
+    return False, "マイクのゲインを設定するコントロールが見つかりませんでした(amixer scontrolsで確認してください)"
 
 
 def save_settings(path, settings):
